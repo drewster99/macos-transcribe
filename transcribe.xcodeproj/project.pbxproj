@@ -243,7 +243,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = transcribe;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Nuclear Cyborg Corp. All rights reserved.";
@@ -260,7 +260,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = transcribe;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Nuclear Cyborg Corp. All rights reserved.";
