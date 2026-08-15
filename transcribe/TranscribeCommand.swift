@@ -42,11 +42,14 @@ struct TranscribeCommand: AsyncParsableCommand {
     )
     var output: String?
 
+    // The value name carries the choices because ArgumentParser echoes only the value name when a
+    // value is missing ("Missing value for '--format <...>'"). Spelling them out here means that
+    // error, and the usage line, both say what the options actually are.
     @Option(
         name: [.short, .long],
         help: ArgumentHelp(
             "Transcript format.",
-            discussion: "One of: \(OutputFormat.allCases.map(\.rawValue).joined(separator: ", "))."
+            valueName: OutputFormat.allCases.map(\.rawValue).joined(separator: "|")
         )
     )
     var format: OutputFormat = .txt
