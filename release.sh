@@ -267,6 +267,13 @@ build_tool() {
     verify_built_product
 }
 
+# Reads one key from the Info.plist embedded in the binary's __TEXT,__info_plist section.
+# `otool -P` prints two header lines before the XML, which plutil cannot parse, so the payload is
+# isolated first.
+embedded_plist_value() {
+    otool -P "$BUILT_TOOL" | sed -n '/<?xml/,$p' | plutil -extract "$1" raw - 2>/dev/null || true
+}
+
 verify_built_product() {
     local archs
     archs="$(lipo -archs "$BUILT_TOOL" | tr -s ' ')"
@@ -275,8 +282,8 @@ verify_built_product() {
     [[ "$archs" == "$REQUIRED_ARCH" ]] || die "Expected architecture '$REQUIRED_ARCH', got '$archs'"
 
     local embedded_version embedded_identifier
-    embedded_version="$(otool -P "$BUILT_TOOL" | plutil -extract CFBundleShortVersionString raw - 2>/dev/null || true)"
-    embedded_identifier="$(otool -P "$BUILT_TOOL" | plutil -extract CFBundleIdentifier raw - 2>/dev/null || true)"
+    embedded_version="$(embedded_plist_value CFBundleShortVersionString)"
+    embedded_identifier="$(embedded_plist_value CFBundleIdentifier)"
 
     if [[ $DRY_RUN -eq 0 ]]; then
         [[ "$embedded_version" == "$NEW_VERSION" ]] \
@@ -286,7 +293,7 @@ verify_built_product() {
         || die "Embedded CFBundleIdentifier is '$embedded_identifier', expected '$BUNDLE_IDENTIFIER'"
 
     # Without this the tool is terminated the moment it asks for Speech Recognition access.
-    otool -P "$BUILT_TOOL" | plutil -extract NSSpeechRecognitionUsageDescription raw - >/dev/null 2>&1 \
+    [[ -n "$(embedded_plist_value NSSpeechRecognitionUsageDescription)" ]] \
         || die "Embedded Info.plist is missing NSSpeechRecognitionUsageDescription"
 
     info "arch=$archs  version=$embedded_version  id=$embedded_identifier"
