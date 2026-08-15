@@ -154,11 +154,21 @@ struct TranscribeCommand: AsyncParsableCommand {
         case .listLocales:
             throw TranscribeError("--list-locales is not implemented yet.", code: .usage)
         case .listTracks:
-            throw TranscribeError("--list-tracks is not implemented yet.", code: .usage)
+            try await listAudioTracks(reporter: reporter)
         case .installModel:
             throw TranscribeError("--install-model is not implemented yet.", code: .usage)
         case .transcribe:
             throw TranscribeError("Transcription is not implemented yet.", code: .usage)
+        }
+    }
+
+    private func listAudioTracks(reporter: StderrReporter) async throws {
+        guard let inputPath else {
+            throw TranscribeError("Missing expected argument '<file>'.", code: .usage)
+        }
+        let source = try await MediaSource.open(path: inputPath, reporter: reporter)
+        for track in source.audioTracks {
+            print(track.listingLine)
         }
     }
 }
