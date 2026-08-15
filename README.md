@@ -17,7 +17,8 @@ $ transcribe -f srt lecture.mov -o lecture.srt
 - Reads any container AVFoundation can open: `.mp4`, `.mov`, `.m4a`, `.wav`, `.aiff`, `.mp3`, and
   the rest — audio-only or video with audio.
 - Picks an audio track when a file has several, and tells you when it had to choose.
-- Writes plain text, SubRip (`.srt`), WebVTT (`.vtt`), or JSON with per-word timings.
+- Writes plain text, timestamped text, SubRip (`.srt`), WebVTT (`.vtt`), or JSON with per-word
+  timings.
 - Runs entirely on-device. No network, no API keys, no per-minute billing.
 - No external dependencies. It does not shell out to `ffmpeg` or anything else.
 
@@ -43,7 +44,7 @@ alongside it, with `SHA256SUMS`.
 transcribe [options] <file>
 
   -o, --output <path>          Write to path instead of standard output
-  -f, --format <fmt>           txt (default), srt, vtt, json
+  -f, --format <fmt>           txt (default), timed, srt, vtt, json
   -l, --locale <bcp47>         Language, e.g. en-US. Defaults to your system locale
       --track <n>              Zero-based audio track index
       --first-track            Use the first audio track without warning
@@ -63,6 +64,22 @@ piping is safe:
 transcribe interview.m4a | grep -i "budget"
 transcribe -f json talk.mp4 | jq '.segments[].words[0]'
 ```
+
+### Formats
+
+`txt` is one line per recognized utterance. `timed` prefixes each of those lines with the time it
+starts, which is the easiest way to skim a long recording:
+
+```
+$ transcribe -f timed standup.m4a
+[00:00:00] Thanks everyone for joining.
+[00:00:04] Let's start with the roadmap review.
+[00:00:11] The ingest work landed yesterday.
+```
+
+`srt` and `vtt` re-segment the text into subtitle cues using the word timings, tunable with
+`--max-cue-seconds` and `--max-words-per-cue`. `json` carries metadata, segments, and per-word start
+and end times.
 
 ### Choosing a track
 
@@ -127,7 +144,7 @@ transcribe/
   Ingest/                    AVAssetReader -> AsyncSequence<AnalyzerInput>   # read this first
   Speech/                    authorization, model installation, SpeechAnalyzer
   Transcript/                transcript model and subtitle cue segmentation
-  Output/                    txt, srt, vtt, and json rendering
+  Output/                    txt, timed, srt, vtt, and json rendering
   Support/                   stderr reporting, interrupts, version
 release.sh                   build, sign, notarize, publish
 ```

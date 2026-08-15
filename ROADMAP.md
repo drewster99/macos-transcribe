@@ -10,7 +10,7 @@ Design log. Completed items stay, marked ✅ — the reasoning is the point, not
 - ✅ Single-stage decode straight into the analyzer's format, no `AVAudioConverter`.
 - ✅ Pull-based ingest sequence with back-pressure.
 - ✅ Authorization, locale resolution, model installation with progress.
-- ✅ Transcription with word timings; `txt`, `srt`, `vtt`, `json` output.
+- ✅ Transcription with word timings; `txt`, `timed`, `srt`, `vtt`, `json` output.
 - ✅ Ctrl-C exits 130 and writes nothing.
 - ✅ Progress on stderr, gated on stderr being a terminal.
 
@@ -34,6 +34,11 @@ loops cover the batch case.
 **(DESIGN) Plain text is one line per finalized result.** Result boundaries are roughly
 utterance-sized and newline-delimited output is what the rest of the toolchain expects. No
 re-segmentation heuristic sits between the model and plain-text output.
+
+**(DESIGN) `timed` is a format, not a `--timestamps` flag.** A flag would be meaningless alongside
+`-f srt`, `-f vtt`, and `-f json`, so it would need validation rejecting those combinations. The
+format enum already decides everything about output shape; keeping it the only such dimension means
+no two options can contradict each other.
 
 **(DESIGN) An unsupported locale is an error.** Falling back to a nearby language would transcribe
 Portuguese with a Spanish model and produce fluent nonsense.

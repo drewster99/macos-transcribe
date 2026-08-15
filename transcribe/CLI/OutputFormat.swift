@@ -3,6 +3,8 @@ enum OutputFormat: String, CaseIterable {
     /// One line per finalized recognition result. The default: newline-delimited text is what the
     /// rest of the Unix toolchain expects.
     case txt
+    /// Plain text with each line prefixed by the time it starts, for skimming a long recording.
+    case timed
     /// SubRip subtitles, cue-segmented from word timings.
     case srt
     /// WebVTT subtitles, cue-segmented from word timings.
@@ -14,7 +16,9 @@ enum OutputFormat: String, CaseIterable {
     /// audio time ranges collected during transcription.
     var needsWordTimings: Bool {
         switch self {
-        case .txt: false
+        // `timed` labels whole lines, and a segment already carries its own start time, so the
+        // extra per-word ranges would be collected and discarded.
+        case .txt, .timed: false
         case .srt, .vtt, .json: true
         }
     }

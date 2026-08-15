@@ -9,6 +9,7 @@ struct TranscriptRenderer {
     func render(_ transcript: Transcript) -> String {
         switch format {
         case .txt: renderPlainText(transcript)
+        case .timed: renderTimedText(transcript)
         case .srt: renderSubRip(transcript)
         case .vtt: renderWebVTT(transcript)
         case .json: renderJSON(transcript)
@@ -24,6 +25,17 @@ struct TranscriptRenderer {
     private func renderPlainText(_ transcript: Transcript) -> String {
         guard !transcript.isEmpty else { return "" }
         return transcript.segments.map(\.text).joined(separator: "\n") + "\n"
+    }
+
+    /// One line per result, prefixed with the time it starts.
+    ///
+    /// Whole seconds, with the hour component always present, so the text starts at the same column
+    /// on every line and stays aligned when a recording runs past an hour.
+    private func renderTimedText(_ transcript: Transcript) -> String {
+        guard !transcript.isEmpty else { return "" }
+        return transcript.segments
+            .map { "[\(Self.clockTimecode($0.start))] \($0.text)" }
+            .joined(separator: "\n") + "\n"
     }
 
     // MARK: - Subtitles
@@ -107,6 +119,13 @@ struct TranscriptRenderer {
     /// `HH:MM:SS.mmm` — WebVTT uses a period.
     static func webVTTTimecode(_ seconds: TimeInterval) -> String {
         timecode(seconds, millisecondSeparator: ".")
+    }
+
+    /// `HH:MM:SS`, truncated rather than rounded so the label never points past the words it marks.
+    static func clockTimecode(_ seconds: TimeInterval) -> String {
+        let clamped = seconds.isFinite ? max(0, seconds) : 0
+        let total = Int(clamped)
+        return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
     }
 
     private static func timecode(_ seconds: TimeInterval, millisecondSeparator: String) -> String {
