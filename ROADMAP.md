@@ -13,8 +13,10 @@ Design log. Completed items stay, marked ✅ — the reasoning is the point, not
 - ✅ Transcription with word timings; `txt`, `timed`, `srt`, `vtt`, `json` output.
 - ✅ Ctrl-C exits 130 and writes nothing.
 - ✅ Progress on stderr, gated on stderr being a terminal.
-- ✅ Unit tests (30) for segmentation, timecodes, output formats, and track selection.
-- ✅ `scripts/make-fixtures.sh` regenerates the media corpus.
+- ✅ Unit tests (38) for segmentation, timecodes, output formats, track selection, and buffer
+  timestamp monotonicity.
+- ✅ `scripts/make-fixtures.sh` regenerates the media corpus;
+  `scripts/run-integration-sweep.sh` runs the exit-code sweep against it.
 - ✅ `release.sh`: arm64 build, Developer ID signing, notarization, stapled `.pkg`, tarball,
   checksums, GitHub release, Homebrew formula. Verified end to end with `--dry-run`; the resulting
   package assesses as `accepted / source=Notarized Developer ID`.
@@ -68,6 +70,12 @@ real PTS are passed to `AnalyzerInput` rather than nil.
 it from a task it owns. And `finalizeAndFinishThroughEndOfInput()` neither observes cancellation nor
 returns once the reader has stopped. Both required explicit mechanisms — see CLAUDE.md.
 
+**(FINDING) `AVAssetReader` buffer chunking is not reproducible.** The same binary reading the same
+bytes yields 24 or 25 buffers between runs, with the final buffer's start time varying by hundreds
+of milliseconds. Total frame count and decoded audio are bit-identical every time. Nothing may
+depend on buffer boundaries, and this is a second reason the timestamp monotonicity guard exists:
+where the boundaries land is not stable, so neither is alignment at them.
+
 ## Verification corpus
 
 Generated with `ffmpeg` (test-only dependency):
@@ -87,17 +95,12 @@ Generated with `ffmpeg` (test-only dependency):
 
 Regenerate with `scripts/make-fixtures.sh`.
 
-Current state: 30/30 unit tests and 31/31 exit-code sweep passing against a Release build.
+Current state: 38/38 unit tests, 33/33 integration checks.
 
 ## Next
 
-1. Cover `PCMBufferFactory` timestamp monotonicity in the unit suite. It is the one pure function
-   left untested, because exercising it needs a `CMReadySampleBuffer` and those come from a real
-   reader; it may want a seam.
-2. Fold the exit-code sweep into a script alongside `make-fixtures.sh`, so integration coverage is
-   as reproducible as the corpus it runs against.
-3. Decide whether `--format json` should offer `SpeechTranscriber.Result.alternatives`. The data is
+1. Decide whether `--format json` should offer `SpeechTranscriber.Result.alternatives`. The data is
    free; it was left out to keep the default output small.
-4. Consider `--verbose` to report the negotiated audio format and selected track, for diagnosing a
+2. Consider `--verbose` to report the negotiated audio format and selected track, for diagnosing a
    file that transcribes poorly.
-5. Revisit whether a `.pkg` is still worth shipping once Homebrew is the common install path.
+3. Revisit whether a `.pkg` is still worth shipping once Homebrew is the common install path.

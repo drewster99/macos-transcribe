@@ -167,14 +167,14 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		ED835B9033B74724A27442D3 /* Sources */ = {
+		BB0000000000000000000003 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		BB0000000000000000000003 /* Sources */ = {
+		ED835B9033B74724A27442D3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -272,6 +272,28 @@
 			};
 			name = Debug;
 		};
+		BB0000000000000000000006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		BB0000000000000000000007 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 		E48971B3C36347EEBAB9D72B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -332,28 +354,6 @@
 			};
 			name = Debug;
 		};
-		BB0000000000000000000006 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 6.0;
-			};
-			name = Debug;
-		};
-		BB0000000000000000000007 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 6.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -366,20 +366,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EC17A21CDA864FE0AA03F114 /* Build configuration list for PBXProject "transcribe" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E48971B3C36347EEBAB9D72B /* Debug */,
-				273306F22D254DA3ABF1D6B6 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		BB0000000000000000000005 /* Build configuration list for PBXNativeTarget "transcribeTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				BB0000000000000000000006 /* Debug */,
 				BB0000000000000000000007 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EC17A21CDA864FE0AA03F114 /* Build configuration list for PBXProject "transcribe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E48971B3C36347EEBAB9D72B /* Debug */,
+				273306F22D254DA3ABF1D6B6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

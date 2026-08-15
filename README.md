@@ -146,6 +146,8 @@ transcribe/
   Transcript/                transcript model and subtitle cue segmentation
   Output/                    txt, timed, srt, vtt, and json rendering
   Support/                   stderr reporting, interrupts, version
+transcribeTests/             unit tests
+scripts/                     fixture generation and the integration sweep
 release.sh                   build, sign, notarize, publish
 ```
 

@@ -81,13 +81,22 @@ enum SpeechModelCatalog {
         // an already-satisfied request does not flash a progress line for a download that is not
         // happening — while a genuinely slow install still reports itself.
         let progressReporting = Task {
-            try? await Task.sleep(for: .milliseconds(750))
-            while !Task.isCancelled {
-                reporter.reportDownloadProgress(
-                    fraction: request.progress.fractionCompleted,
-                    label: "downloading speech model"
-                )
-                try? await Task.sleep(for: .milliseconds(150))
+            // Sleeping throws only when this task is cancelled, which happens the moment the
+            // install finishes. That is the normal way out of this loop, not a failure.
+            do {
+                try await Task.sleep(for: .milliseconds(750))
+                while true {
+                    reporter.reportDownloadProgress(
+                        fraction: request.progress.fractionCompleted,
+                        label: "downloading speech model"
+                    )
+                    try await Task.sleep(for: .milliseconds(150))
+                }
+            } catch {
+                // Caught exhaustively rather than by type: an error escaping a detached Task is
+                // discarded silently, and sleeping is the only thing here that can throw, so there
+                // is nothing else this could be hiding.
+                return
             }
         }
         defer {

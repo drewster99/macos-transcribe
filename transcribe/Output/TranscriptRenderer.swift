@@ -100,11 +100,18 @@ struct TranscriptRenderer {
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        guard let data = try? encoder.encode(payload),
-              let text = String(data: data, encoding: .utf8) else {
-            // Every field is a String, Double, or array of the same, so encoding cannot fail for
-            // any input this program can produce.
-            fatalError("Transcript JSON encoding failed for a payload of plain values")
+
+        let data: Data
+        do {
+            data = try encoder.encode(payload)
+        } catch {
+            // Every field is a String, Double, or array of those, so this cannot fail for any input
+            // the program can produce. Reaching it means the payload types changed into something
+            // unencodable, which is a programming error rather than a runtime condition.
+            fatalError("Transcript JSON encoding failed: \(error)")
+        }
+        guard let text = String(data: data, encoding: .utf8) else {
+            fatalError("JSONEncoder produced output that is not valid UTF-8")
         }
         return text + "\n"
     }

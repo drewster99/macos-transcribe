@@ -59,11 +59,16 @@ final class TranscriptSegmenterTests: XCTestCase {
     }
 
     func testMaximumCueDurationBoundsCueSpan() {
-        let long = words(Array(repeating: "word", count: 40), duration: 1.0, gap: 0.0)
+        let wordDuration: TimeInterval = 1.0
+        let long = words(Array(repeating: "word", count: 40), duration: wordDuration, gap: 0.0)
         let cues = TranscriptSegmenter.makeCues(from: long, limits: limits)
+
+        // Asserted before the loop: iterating an empty result would pass vacuously.
+        XCTAssertFalse(cues.isEmpty)
         for cue in cues {
-            // One word can exceed the limit on its own; the cue must not keep growing past it.
-            XCTAssertLessThanOrEqual(cue.end - cue.start, limits.maximumCueDuration + 1.0)
+            // A cue is closed once it reaches the limit, so it can overshoot by at most the word
+            // that crossed it.
+            XCTAssertLessThanOrEqual(cue.end - cue.start, limits.maximumCueDuration + wordDuration)
         }
     }
 
@@ -73,11 +78,15 @@ final class TranscriptSegmenterTests: XCTestCase {
         XCTAssertEqual(cues.flatMap(\.words).map(\.text), spoken.map(\.text))
     }
 
-    func testCueBoundsMatchItsWords() {
+    func testCueBoundsMatchItsWords() throws {
         let cues = TranscriptSegmenter.makeCues(from: words(["one", "two."]), limits: limits)
-        let cue = try? XCTUnwrap(cues.first)
-        XCTAssertEqual(cue?.start, cues.first?.words.first?.start)
-        XCTAssertEqual(cue?.end, cues.first?.words.last?.end)
+        // Unwrapped rather than compared as optionals: nil == nil would pass even if no cue was
+        // produced at all.
+        let cue = try XCTUnwrap(cues.first)
+        let firstWord = try XCTUnwrap(cue.words.first)
+        let lastWord = try XCTUnwrap(cue.words.last)
+        XCTAssertEqual(cue.start, firstWord.start)
+        XCTAssertEqual(cue.end, lastWord.end)
     }
 
     func testOverridingKeepsSoftCapBelowHardCap() {

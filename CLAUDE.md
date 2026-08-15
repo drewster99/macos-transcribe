@@ -133,6 +133,10 @@ These were measured on macOS 26.6, and two of them contradict what the API names
 - Word timestamps are quantized to a 60 ms grid.
 - `SpeechTranscriber.Result` has no stored `isFinal`; it is an extension on `SpeechModuleResult`.
 
+`AVAssetReader` is worth one warning of its own: **its buffer chunking is not reproducible**. The
+same binary reading the same bytes produces 24 or 25 buffers from run to run. Frame totals and
+decoded audio are identical every time, so write nothing that depends on where the boundaries fall.
+
 ## Conventions specific to this repo
 
 - Domain types (`OutputFormat`, `TranscribeExitCode`, `TranscribeError`) do not import
@@ -163,9 +167,11 @@ mcp__drews-xcode-mcp__run_project_tests
     scheme: transcribe
 ```
 
-**Integration** is the exit-code sweep in `ROADMAP.md`, run against the corpus from
+**Integration** is `scripts/run-integration-sweep.sh`, run against the corpus from
 `scripts/make-fixtures.sh` (which needs ffmpeg — test scaffolding only, never a runtime dependency).
-The two fixtures that matter most are the ones that catch silent-wrong-answer bugs:
+It checks the exit code of every documented failure mode, because most of what can go wrong here is
+a wrong exit code rather than a crash. The two fixtures that matter most are the ones that catch
+silent-wrong-answer bugs:
 
 - a `+faststart` file truncated to 55%, which opens and reports a full duration but runs out of data
   mid-read;

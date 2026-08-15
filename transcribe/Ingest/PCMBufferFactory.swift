@@ -8,11 +8,12 @@ struct PCMBufferFactory {
 
     let format: AVAudioFormat
 
-    /// The end of the previous buffer, used to detect timestamps that step backwards.
-    private var expectedNextTimestamp: CMTime?
+    /// Guards against decoder timestamps that step backwards between buffers.
+    private var timeline: MonotonicBufferTimeline
 
     init(format: AVAudioFormat) {
         self.format = format
+        self.timeline = MonotonicBufferTimeline(sampleRate: format.sampleRate)
     }
 
     /// Builds a PCM buffer and its start time from a decoded sample buffer.
@@ -48,32 +49,8 @@ struct PCMBufferFactory {
             )
         }
 
-        let startTime = monotonicTimestamp(for: audio.presentationTimeStamp, frameCount: frameCount)
+        let startTime = timeline.startTime(for: audio.presentationTimeStamp, frameCount: frameCount)
         return PCMInput(buffer: buffer, startTime: startTime, formatDescription: audio.formatDescription)
-    }
-
-    /// Returns a start time that never steps backwards past the previous buffer.
-    ///
-    /// Sub-frame regressions come from `CMTime` rounding and are snapped forward. Larger backward
-    /// jumps and all forward gaps are passed through untouched: a gap is real silence, and moving
-    /// it would desynchronize every timestamp after it.
-    private mutating func monotonicTimestamp(for presentationTime: CMTime, frameCount: Int) -> CMTime {
-        let sampleRate = CMTimeScale(format.sampleRate)
-        var startTime = presentationTime
-
-        if let expected = expectedNextTimestamp, CMTimeCompare(presentationTime, expected) < 0 {
-            let drift = CMTimeAbsoluteValue(CMTimeSubtract(expected, presentationTime))
-            let oneFrame = CMTime(value: 1, timescale: sampleRate)
-            if CMTimeCompare(drift, oneFrame) <= 0 {
-                startTime = expected
-            }
-        }
-
-        expectedNextTimestamp = CMTimeAdd(
-            startTime,
-            CMTime(value: CMTimeValue(frameCount), timescale: sampleRate)
-        )
-        return startTime
     }
 }
 
