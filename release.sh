@@ -311,15 +311,22 @@ sign_tool() {
 
     codesign --verify --strict --verbose=4 "$BUILT_TOOL" 2>&1 | sed 's/^/    /'
 
-    local authority
-    authority="$(codesign -dvv "$BUILT_TOOL" 2>&1 | grep '^Authority=Developer ID Application' || true)"
-    [[ -n "$authority" ]] || die "Binary is not signed with a Developer ID Application certificate"
+    # Captured into variables before matching. Piping directly into `grep -q` races: grep exits at
+    # the first match, codesign takes SIGPIPE, and pipefail then reports the whole pipeline as
+    # failed even though the match succeeded.
+    local signature_details entitlements
+    signature_details="$(codesign -dvvv "$BUILT_TOOL" 2>&1 || true)"
+    entitlements="$(codesign -d --entitlements - --xml "$BUILT_TOOL" 2>/dev/null || true)"
+
+    grep -q '^Authority=Developer ID Application' <<<"$signature_details" \
+        || die "Binary is not signed with a Developer ID Application certificate"
 
     # Hardened runtime is a notarization requirement; get-task-allow would make the binary
     # debuggable and is rejected.
-    codesign -d --verbose=2 "$BUILT_TOOL" 2>&1 | grep -q 'flags=.*runtime' \
+    grep -q 'flags=.*runtime' <<<"$signature_details" \
         || die "Hardened runtime flag is not set on the signed binary"
-    if codesign -d --entitlements - --xml "$BUILT_TOOL" 2>/dev/null | grep -q 'get-task-allow'; then
+
+    if grep -q 'get-task-allow' <<<"$entitlements"; then
         die "Binary carries get-task-allow, which notarization rejects"
     fi
 
