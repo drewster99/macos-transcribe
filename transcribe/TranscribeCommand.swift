@@ -1,5 +1,6 @@
 import ArgumentParser
 import Foundation
+import Speech
 
 // The domain types stay free of any ArgumentParser dependency so the transcription core can be
 // built and exercised without the CLI layer. These are the only two bridges into it.
@@ -160,13 +161,13 @@ struct TranscribeCommand: AsyncParsableCommand {
     private func execute(reporter: StderrReporter) async throws {
         switch mode {
         case .listLocales:
-            throw TranscribeError("--list-locales is not implemented yet.", code: .usage)
+            try await listSupportedLocales()
         case .listTracks:
             try await listAudioTracks(reporter: reporter)
         case .installModel:
-            throw TranscribeError("--install-model is not implemented yet.", code: .usage)
+            try await installSpeechModel(reporter: reporter)
         case .transcribe:
-            throw TranscribeError("Transcription is not implemented yet.", code: .usage)
+            try await runTranscription(reporter: reporter)
         }
     }
 
@@ -177,6 +178,82 @@ struct TranscribeCommand: AsyncParsableCommand {
         let source = try await MediaSource.open(path: inputPath, reporter: reporter)
         for track in source.audioTracks {
             print(track.listingLine)
+        }
+    }
+
+    private func listSupportedLocales() async throws {
+        for listing in await SpeechModelCatalog.localeListings() {
+            print(listing.listingLine)
+        }
+    }
+
+    private func installSpeechModel(reporter: StderrReporter) async throws {
+        try await SpeechAuthorization.requireAuthorization()
+        let resolved = try await SpeechModelCatalog.resolveLocale(requested: locale)
+        let transcriber = SpeechTranscriber(
+            locale: resolved,
+            transcriptionOptions: [],
+            reportingOptions: [],
+            attributeOptions: [.audioTimeRange]
+        )
+        let didDownload = try await SpeechModelCatalog.ensureModelInstalled(
+            for: transcriber,
+            locale: resolved,
+            reporter: reporter
+        )
+        if !didDownload {
+            // --install-model is explicitly about the model, so it confirms the outcome even when
+            // there was nothing to do. Ordinary transcription stays silent in this case.
+            reporter.notice("The \(resolved.identifier(.bcp47)) speech model is already installed.")
+        }
+    }
+
+    private func runTranscription(reporter: StderrReporter) async throws {
+        guard let inputPath else {
+            throw TranscribeError("Missing expected argument '<file>'.", code: .usage)
+        }
+
+        try await SpeechAuthorization.requireAuthorization()
+        let resolvedLocale = try await SpeechModelCatalog.resolveLocale(requested: locale)
+        let source = try await MediaSource.open(path: inputPath, reporter: reporter)
+        let selectedTrack = try source.selectTrack(trackSelection, reporter: reporter)
+
+        let engine = TranscriptionEngine(reporter: reporter)
+        let transcript = try await engine.transcribe(
+            source: source,
+            track: selectedTrack,
+            locale: resolvedLocale,
+            collectWordTimings: format.needsWordTimings
+        )
+
+        if transcript.isEmpty {
+            reporter.warn("No speech was recognized in this audio.")
+        }
+
+        let rendered = TranscriptRenderer(
+            format: format,
+            limits: TranscriptSegmenter.Limits.default.overriding(
+                maximumCueDuration: maxCueSeconds,
+                hardWordCap: maxWordsPerCue
+            )
+        ).render(transcript)
+
+        try write(rendered, reporter: reporter)
+    }
+
+    private func write(_ contents: String, reporter: StderrReporter) throws {
+        guard let output else {
+            print(contents, terminator: "")
+            return
+        }
+        let url = URL(fileURLWithPath: (output as NSString).expandingTildeInPath)
+        do {
+            try contents.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            throw TranscribeError(
+                "Could not write to '\(output)': \(error.localizedDescription)",
+                code: .unreadableInput
+            )
         }
     }
 }

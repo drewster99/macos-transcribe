@@ -87,6 +87,26 @@ final class StderrReporter: Sendable {
         write("\r\u{1B}[K  \(percent)%  \(Self.timecode(processed)) / \(Self.timecode(total))")
     }
 
+    /// Draws progress for a model download, which reports a completed fraction rather than a
+    /// position in a timeline.
+    func reportDownloadProgress(fraction: Double, label: String) {
+        guard drawsProgress else { return }
+
+        let shouldDraw = progressState.withLock { state -> Bool in
+            let now = ContinuousClock.now
+            if let last = state.lastDraw, now - last < Self.minimumRedrawInterval {
+                return false
+            }
+            state.lastDraw = now
+            state.hasPendingLine = true
+            return true
+        }
+        guard shouldDraw else { return }
+
+        let percent = Int((min(1.0, max(0.0, fraction)) * 100).rounded())
+        write("\r\u{1B}[K  \(label) \(percent)%")
+    }
+
     /// Erases the progress indicator.
     ///
     /// Must be called before the process exits by any path — an abandoned progress line would
