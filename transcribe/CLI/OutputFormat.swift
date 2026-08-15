@@ -1,7 +1,5 @@
-import ArgumentParser
-
 /// The serialization used for the finished transcript.
-enum OutputFormat: String, CaseIterable, ExpressibleByArgument {
+enum OutputFormat: String, CaseIterable {
     /// One line per finalized recognition result. The default: newline-delimited text is what the
     /// rest of the Unix toolchain expects.
     case txt

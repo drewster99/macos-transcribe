@@ -1,5 +1,3 @@
-import ArgumentParser
-
 /// Process exit codes, following the `sysexits.h` conventions where one applies so that shell
 /// callers can distinguish "you asked for something impossible" from "this file is unusable" from
 /// "the system refused".
@@ -18,15 +16,12 @@ enum TranscribeExitCode: Int32 {
     case notAuthorized = 77
     /// The requested locale is unsupported, or its model could not be installed.
     case localeUnavailable = 78
-
-    var asExitCode: ExitCode { ExitCode(rawValue) }
 }
 
 /// An error that carries both a human-readable message and the exit code to leave with.
 ///
-/// Conforming to `CustomStringConvertible` rather than `LocalizedError` is deliberate:
-/// ArgumentParser prints `String(describing:)` for a plain `Error`, and routing through
-/// `LocalizedError` would prefix the message with "The operation couldn't be completed".
+/// Conforming to `CustomStringConvertible` rather than `LocalizedError` is deliberate: routing
+/// through `LocalizedError` would prefix the message with "The operation couldn't be completed".
 struct TranscribeError: Error, CustomStringConvertible {
     let description: String
     let exitCode: TranscribeExitCode

@@ -1,6 +1,14 @@
 import ArgumentParser
 import Foundation
 
+// The domain types stay free of any ArgumentParser dependency so the transcription core can be
+// built and exercised without the CLI layer. These are the only two bridges into it.
+extension OutputFormat: ExpressibleByArgument {}
+
+extension TranscribeExitCode {
+    var asExitCode: ExitCode { ExitCode(rawValue) }
+}
+
 @main
 struct TranscribeCommand: AsyncParsableCommand {
 
