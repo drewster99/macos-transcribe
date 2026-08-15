@@ -52,9 +52,14 @@ struct AssetAudioInputSequence: AsyncSequence, Sendable {
             guard let source else { return nil }
 
             while true {
-                // Cancellation must throw rather than end the sequence: returning nil here would
+                // Interruption must throw rather than end the sequence: returning nil here would
                 // read as a clean end of input, and the analyzer would finalize a partial
                 // transcript as though it were complete.
+                //
+                // Both checks are needed. The analyzer iterates this sequence from a task it owns,
+                // so `Task.isCancelled` does not observe the command's cancellation; the flag
+                // carries it across that boundary.
+                try plan.interrupts.throwIfInterrupted()
                 try Task.checkCancellation()
 
                 guard let sample = try await source.nextSample() else {
@@ -126,6 +131,9 @@ struct AudioIngestPlan: Sendable {
     let format: NegotiatedAudioFormat
 
     let progress: IngestProgress
+
+    /// Observed on every buffer so Ctrl-C stops the read promptly, and stops it by throwing.
+    let interrupts: InterruptFlag
 }
 
 /// Tracks how far into the media the ingest has read, and reports it.

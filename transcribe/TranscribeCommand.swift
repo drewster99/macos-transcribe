@@ -150,15 +150,32 @@ struct TranscribeCommand: AsyncParsableCommand {
         // The progress indicator owns a line of the terminal; every exit path has to give it back.
         defer { reporter.clearProgressLine() }
 
+        // The work runs in a child task so Ctrl-C can cancel it cooperatively, letting the audio
+        // reader shut down from the context that owns it. The flag travels with it because the
+        // analyzer iterates the audio from a task of its own, where task cancellation is not
+        // observable.
+        let interrupts = InterruptFlag()
+        let work = Task { try await execute(reporter: reporter, interrupts: interrupts) }
+        let monitor = InterruptMonitor {
+            interrupts.set()
+            work.cancel()
+        }
+        defer { monitor.stop() }
+
         do {
-            try await execute(reporter: reporter)
+            try await work.value
         } catch let error as TranscribeError {
             reporter.error(error.description)
             throw error.exitCode.asExitCode
+        } catch is CancellationError {
+            // Partial output is deliberately not written: a transcript that stops early is
+            // indistinguishable from a complete one once it leaves this process.
+            reporter.error("Interrupted. No transcript was written.")
+            throw TranscribeExitCode.interrupted.asExitCode
         }
     }
 
-    private func execute(reporter: StderrReporter) async throws {
+    private func execute(reporter: StderrReporter, interrupts: InterruptFlag) async throws {
         switch mode {
         case .listLocales:
             try await listSupportedLocales()
@@ -167,7 +184,7 @@ struct TranscribeCommand: AsyncParsableCommand {
         case .installModel:
             try await installSpeechModel(reporter: reporter)
         case .transcribe:
-            try await runTranscription(reporter: reporter)
+            try await runTranscription(reporter: reporter, interrupts: interrupts)
         }
     }
 
@@ -208,7 +225,7 @@ struct TranscribeCommand: AsyncParsableCommand {
         }
     }
 
-    private func runTranscription(reporter: StderrReporter) async throws {
+    private func runTranscription(reporter: StderrReporter, interrupts: InterruptFlag) async throws {
         guard let inputPath else {
             throw TranscribeError("Missing expected argument '<file>'.", code: .usage)
         }
@@ -218,7 +235,7 @@ struct TranscribeCommand: AsyncParsableCommand {
         let source = try await MediaSource.open(path: inputPath, reporter: reporter)
         let selectedTrack = try source.selectTrack(trackSelection, reporter: reporter)
 
-        let engine = TranscriptionEngine(reporter: reporter)
+        let engine = TranscriptionEngine(reporter: reporter, interrupts: interrupts)
         let transcript = try await engine.transcribe(
             source: source,
             track: selectedTrack,

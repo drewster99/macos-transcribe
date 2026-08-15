@@ -16,6 +16,8 @@ enum TranscribeExitCode: Int32 {
     case notAuthorized = 77
     /// The requested locale is unsupported, or its model could not be installed.
     case localeUnavailable = 78
+    /// Interrupted with Ctrl-C. 128 plus the signal number, as shells expect.
+    case interrupted = 130
 }
 
 /// An error that carries both a human-readable message and the exit code to leave with.

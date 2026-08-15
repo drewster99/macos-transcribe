@@ -7,6 +7,7 @@ import Speech
 struct TranscriptionEngine {
 
     let reporter: StderrReporter
+    let interrupts: InterruptFlag
 
     /// Transcribes the selected track of `source`.
     func transcribe(
@@ -46,7 +47,8 @@ struct TranscriptionEngine {
             asset: source.asset,
             trackID: track.trackID,
             format: negotiated,
-            progress: IngestProgress(reporter: reporter, assetDuration: source.duration)
+            progress: IngestProgress(reporter: reporter, assetDuration: source.duration),
+            interrupts: interrupts
         )
 
         let segments = try await runAnalyzer(transcriber: transcriber, plan: plan)
@@ -74,33 +76,63 @@ struct TranscriptionEngine {
         let analyzer = SpeechAnalyzer(modules: [transcriber])
         let collector = ResultCollector()
 
-        do {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    for try await result in results {
-                        // Only finalized results are collected; with volatile reporting disabled
-                        // this should be all of them, but the guard keeps a revised guess from
-                        // reaching the transcript if that ever changes.
-                        guard result.isFinal else { continue }
-                        await collector.append(result)
-                    }
-                }
-                group.addTask {
-                    try await analyzer.start(inputSequence: AssetAudioInputSequence(plan: plan))
-                    try await analyzer.finalizeAndFinishThroughEndOfInput()
-                }
-                try await group.waitForAll()
+        // The collector runs as an independent task rather than a sibling in a task group. In a
+        // group, a failure while reading audio would leave the collector still waiting on a results
+        // stream that only the error path can end — and the group cannot return until every child
+        // finishes, so nothing would ever run the code that ends it. Keeping it separate lets the
+        // analyzer be shut down first, which closes the stream and releases the collector.
+        let collecting = Task {
+            for try await result in results {
+                // Only finalized results are collected; with volatile reporting disabled this
+                // should be all of them, but the guard keeps a revised guess from reaching the
+                // transcript if that ever changes.
+                guard result.isFinal else { continue }
+                await collector.append(result)
             }
+        }
+
+        // Ctrl-C has to reach the analyzer directly. Once the reader stops, the end of input the
+        // finalize call is waiting for never arrives, and that call does not observe task
+        // cancellation — so it has to be torn down from the signal side.
+        interrupts.onInterrupt {
+            Task { await analyzer.cancelAndFinishNow() }
+        }
+        defer { interrupts.removeHandlers() }
+
+        do {
+            try await analyzer.start(inputSequence: AssetAudioInputSequence(plan: plan))
+            try await analyzer.finalizeAndFinishThroughEndOfInput()
         } catch {
             // Reaching here means input stopped early or a module failed. Cancelling rather than
             // finalizing is deliberate: finalizing would emit whatever was recognized so far as a
             // complete transcript, which is a wrong answer that looks like a right one.
             await analyzer.cancelAndFinishNow()
+            collecting.cancel()
+            _ = await collecting.result
             reporter.clearProgressLine()
+            // An interrupt reaches this catch as whatever error the shutdown produced. It is
+            // reported as cancellation so the exit code says "interrupted" rather than naming some
+            // internal consequence of the shutdown.
+            if interrupts.isSet { throw CancellationError() }
+            throw mapped(error)
+        }
+
+        // Finalizing ends the results stream, so the collector completes on its own here.
+        do {
+            try await collecting.value
+        } catch {
+            reporter.clearProgressLine()
+            if interrupts.isSet { throw CancellationError() }
             throw mapped(error)
         }
 
         reporter.clearProgressLine()
+
+        // The backstop for an interrupt that arrived too late to stop the ingest — for instance
+        // once the last buffer had already been read. Without it, a run cut short here would return
+        // its partial results and be written out as a finished transcript.
+        try interrupts.throwIfInterrupted()
+
         return await collector.segments()
     }
 
