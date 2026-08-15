@@ -12,12 +12,31 @@
 
 /* Begin PBXFileReference section */
 		2647F268C84D47D9A98D2849 /* transcribe */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = transcribe; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB0000000000000000000002 /* transcribeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = transcribeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BB0000000000000000000009 /* Exceptions for "transcribe" folder in "transcribeTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				TranscribeCommand.swift,
+			);
+			target = BB0000000000000000000001 /* transcribeTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8424A6E94D5A421597462D16 /* transcribe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BB0000000000000000000009 /* Exceptions for "transcribe" folder in "transcribeTests" target */,
+			);
 			path = transcribe;
+			sourceTree = "<group>";
+		};
+		BB0000000000000000000008 /* transcribeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = transcribeTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +50,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BB0000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				8424A6E94D5A421597462D16 /* transcribe */,
+				BB0000000000000000000008 /* transcribeTests */,
 				F68A50764B3C456994C3498B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				2647F268C84D47D9A98D2849 /* transcribe */,
+				BB0000000000000000000002 /* transcribeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,6 +103,28 @@
 			productReference = 2647F268C84D47D9A98D2849 /* transcribe */;
 			productType = "com.apple.product-type.tool";
 		};
+		BB0000000000000000000001 /* transcribeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000000000000000000005 /* Build configuration list for PBXNativeTarget "transcribeTests" */;
+			buildPhases = (
+				BB0000000000000000000003 /* Sources */,
+				BB0000000000000000000004 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8424A6E94D5A421597462D16 /* transcribe */,
+				BB0000000000000000000008 /* transcribeTests */,
+			);
+			name = transcribeTests;
+			packageProductDependencies = (
+			);
+			productName = transcribeTests;
+			productReference = BB0000000000000000000002 /* transcribeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -86,6 +136,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					4056099517164CE1956091B2 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					BB0000000000000000000001 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -108,12 +161,20 @@
 			projectRoot = "";
 			targets = (
 				4056099517164CE1956091B2 /* transcribe */,
+				BB0000000000000000000001 /* transcribeTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
 		ED835B9033B74724A27442D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000000000000000000003 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -271,6 +332,28 @@
 			};
 			name = Debug;
 		};
+		BB0000000000000000000006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		BB0000000000000000000007 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuclearcyborg.transcribeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -288,6 +371,15 @@
 			buildConfigurations = (
 				E48971B3C36347EEBAB9D72B /* Debug */,
 				273306F22D254DA3ABF1D6B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB0000000000000000000005 /* Build configuration list for PBXNativeTarget "transcribeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB0000000000000000000006 /* Debug */,
+				BB0000000000000000000007 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
