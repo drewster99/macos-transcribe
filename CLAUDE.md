@@ -149,10 +149,27 @@ These were measured on macOS 26.6, and two of them contradict what the API names
 
 ## Testing
 
-There is no XCTest target yet; verification is via the fixture corpus and the exit-code sweep
-described in `ROADMAP.md`. When adding behavior, extend that sweep. The fixtures that matter most
-are the two that catch silent-wrong-answer bugs:
+Two layers, and both matter.
+
+**Unit tests** live in `transcribeTests/`, run with the `transcribe` scheme. Because a command line
+tool cannot host a test bundle and cannot be `@testable import`ed, the sources under test are
+compiled into the bundle directly via the synchronized group, with a
+`PBXFileSystemSynchronizedBuildFileExceptionSet` excluding `TranscribeCommand.swift` — two `@main`
+symbols in one bundle will not link. Adding a new non-`@main` source file needs no project edit.
+
+```
+mcp__drews-xcode-mcp__run_project_tests
+    project_path: .../transcribe.xcodeproj
+    scheme: transcribe
+```
+
+**Integration** is the exit-code sweep in `ROADMAP.md`, run against the corpus from
+`scripts/make-fixtures.sh` (which needs ffmpeg — test scaffolding only, never a runtime dependency).
+The two fixtures that matter most are the ones that catch silent-wrong-answer bugs:
 
 - a `+faststart` file truncated to 55%, which opens and reports a full duration but runs out of data
   mid-read;
 - a file whose audio is offset from the video by an edit list.
+
+`release.sh` runs the unit tests before building, and expands the finished `.pkg` to run the binary
+it would install, exit codes included.

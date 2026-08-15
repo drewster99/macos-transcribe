@@ -13,6 +13,8 @@ Design log. Completed items stay, marked ✅ — the reasoning is the point, not
 - ✅ Transcription with word timings; `txt`, `timed`, `srt`, `vtt`, `json` output.
 - ✅ Ctrl-C exits 130 and writes nothing.
 - ✅ Progress on stderr, gated on stderr being a terminal.
+- ✅ Unit tests (30) for segmentation, timecodes, output formats, and track selection.
+- ✅ `scripts/make-fixtures.sh` regenerates the media corpus.
 - ✅ `release.sh`: arm64 build, Developer ID signing, notarization, stapled `.pkg`, tarball,
   checksums, GitHub release, Homebrew formula. Verified end to end with `--dry-run`; the resulting
   package assesses as `accepted / source=Notarized Developer ID`.
@@ -83,14 +85,17 @@ Generated with `ffmpeg` (test-only dependency):
 | 8 s leading silence | progress not appearing hung; recognition after silence |
 | 10 minute file | memory flatness, progress, interrupt |
 
-Current state: 31/31 exit-code sweep passing against a Release build.
+Regenerate with `scripts/make-fixtures.sh`.
+
+Current state: 30/30 unit tests and 31/31 exit-code sweep passing against a Release build.
 
 ## Next
 
-1. XCTest target. The segmenter, timecode formatting, `TrackSelection.resolvedIndex`, and
-   `PCMBufferFactory` timestamp monotonicity are all pure functions and should be unit tested.
-2. A committed fixture-generation script so the corpus is reproducible rather than living in a
-   scratch directory.
+1. Cover `PCMBufferFactory` timestamp monotonicity in the unit suite. It is the one pure function
+   left untested, because exercising it needs a `CMReadySampleBuffer` and those come from a real
+   reader; it may want a seam.
+2. Fold the exit-code sweep into a script alongside `make-fixtures.sh`, so integration coverage is
+   as reproducible as the corpus it runs against.
 3. Decide whether `--format json` should offer `SpeechTranscriber.Result.alternatives`. The data is
    free; it was left out to keep the default output small.
 4. Consider `--verbose` to report the negotiated audio format and selected track, for diagnosing a
