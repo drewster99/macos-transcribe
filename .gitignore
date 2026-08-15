@@ -1,0 +1,18 @@
+# Xcode build products. release.sh refuses to publish from a dirty tree, so these must never be tracked.
+build/
+DerivedData/
+
+# Per-user Xcode state — window positions, breakpoints, the last selected scheme.
+xcuserdata/
+*.xcuserstate
+
+# SwiftPM's resolved-package cache inside the Xcode project. Package.resolved IS tracked (below)
+# so that a release builds the same dependency versions the developer tested.
+.swiftpm/
+transcribe.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Claude Code local session state — never part of the repo.
+.claude/
+
+# Finder metadata.
+.DS_Store

@@ -1,0 +1,164 @@
+import ArgumentParser
+import Foundation
+
+@main
+struct TranscribeCommand: AsyncParsableCommand {
+
+    static let configuration = CommandConfiguration(
+        commandName: "transcribe",
+        abstract: "Transcribe an audio file, or a video file's audio, using on-device speech recognition.",
+        discussion: """
+            The transcript is written to standard output unless --output is given. Warnings and \
+            progress go to standard error, so the output is safe to redirect or pipe.
+
+            Speech models are downloaded per locale on first use and cached by the system.
+            """,
+        version: ToolVersion.displayString
+    )
+
+    // MARK: - Input
+
+    @Argument(
+        help: ArgumentHelp("The audio or video file to transcribe.", valueName: "file"),
+        completion: .file()
+    )
+    var inputPath: String?
+
+    // MARK: - Output
+
+    @Option(
+        name: [.short, .long],
+        help: ArgumentHelp("Write the transcript to this path instead of standard output.", valueName: "path"),
+        completion: .file()
+    )
+    var output: String?
+
+    @Option(
+        name: [.short, .long],
+        help: ArgumentHelp(
+            "Transcript format.",
+            discussion: "One of: \(OutputFormat.allCases.map(\.rawValue).joined(separator: ", "))."
+        )
+    )
+    var format: OutputFormat = .txt
+
+    @Option(
+        name: [.short, .long],
+        help: ArgumentHelp("BCP-47 language tag, e.g. en-US. Defaults to the system locale.", valueName: "locale")
+    )
+    var locale: String?
+
+    // MARK: - Track selection
+
+    @Option(help: ArgumentHelp("Zero-based index of the audio track to transcribe.", valueName: "n"))
+    var track: Int?
+
+    @Flag(help: "Use the first audio track without warning when the file has several.")
+    var firstTrack = false
+
+    // MARK: - Informational modes
+
+    @Flag(help: "List the input's audio tracks and exit.")
+    var listTracks = false
+
+    @Flag(help: "List locales supported by on-device transcription and exit.")
+    var listLocales = false
+
+    @Flag(help: "Download and install the speech model for the selected locale, then exit.")
+    var installModel = false
+
+    // MARK: - Subtitle tuning
+
+    @Option(help: ArgumentHelp("Maximum duration of one subtitle cue, in seconds.", valueName: "seconds"))
+    var maxCueSeconds: Double = TranscriptSegmenter.Limits.default.maximumCueDuration
+
+    @Option(help: ArgumentHelp("Maximum number of words in one subtitle cue.", valueName: "n"))
+    var maxWordsPerCue: Int = TranscriptSegmenter.Limits.default.hardWordCap
+
+    // MARK: - Verbosity
+
+    @Flag(name: [.short, .long], help: "Suppress warnings and progress on standard error.")
+    var quiet = false
+
+    // MARK: - Validation
+
+    func validate() throws {
+        if track != nil && firstTrack {
+            throw ValidationError("--track and --first-track cannot be used together.")
+        }
+        if let track, track < 0 {
+            throw ValidationError("--track must be zero or greater; got \(track).")
+        }
+        if maxCueSeconds <= 0 {
+            throw ValidationError("--max-cue-seconds must be greater than zero.")
+        }
+        if maxWordsPerCue < 1 {
+            throw ValidationError("--max-words-per-cue must be at least 1.")
+        }
+        if mode.requiresInputFile && inputPath == nil {
+            throw ValidationError("Missing expected argument '<file>'.")
+        }
+        if mode != .transcribe && output != nil {
+            throw ValidationError("--output applies only when transcribing.")
+        }
+    }
+
+    /// What this invocation is actually being asked to do.
+    ///
+    /// Derived once from the mode flags so the rest of the command branches on a single value
+    /// rather than re-reading three independent booleans that can contradict each other.
+    private var mode: InvocationMode {
+        if listLocales { return .listLocales }
+        if listTracks { return .listTracks }
+        if installModel { return .installModel }
+        return .transcribe
+    }
+
+    private enum InvocationMode: Equatable {
+        case transcribe
+        case listTracks
+        case listLocales
+        case installModel
+
+        var requiresInputFile: Bool {
+            switch self {
+            case .transcribe, .listTracks: true
+            case .listLocales, .installModel: false
+            }
+        }
+    }
+
+    private var trackSelection: TrackSelection {
+        if let track { return .index(track) }
+        if firstTrack { return .firstTrackExplicitly }
+        return .defaultTrack
+    }
+
+    // MARK: - Execution
+
+    func run() async throws {
+        let reporter = StderrReporter(quiet: quiet)
+        // The progress indicator owns a line of the terminal; every exit path has to give it back.
+        defer { reporter.clearProgressLine() }
+
+        do {
+            try await execute(reporter: reporter)
+        } catch let error as TranscribeError {
+            reporter.error(error.description)
+            throw error.exitCode.asExitCode
+        }
+    }
+
+    private func execute(reporter: StderrReporter) async throws {
+        switch mode {
+        case .listLocales:
+            throw TranscribeError("--list-locales is not implemented yet.", code: .usage)
+        case .listTracks:
+            throw TranscribeError("--list-tracks is not implemented yet.", code: .usage)
+        case .installModel:
+            throw TranscribeError("--install-model is not implemented yet.", code: .usage)
+        case .transcribe:
+            throw TranscribeError("Transcription is not implemented yet.", code: .usage)
+        }
+    }
+}
