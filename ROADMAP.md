@@ -13,6 +13,9 @@ Design log. Completed items stay, marked ✅ — the reasoning is the point, not
 - ✅ Transcription with word timings; `txt`, `timed`, `srt`, `vtt`, `json` output.
 - ✅ Ctrl-C exits 130 and writes nothing.
 - ✅ Progress on stderr, gated on stderr being a terminal.
+- ✅ `release.sh`: arm64 build, Developer ID signing, notarization, stapled `.pkg`, tarball,
+  checksums, GitHub release, Homebrew formula. Verified end to end with `--dry-run`; the resulting
+  package assesses as `accepted / source=Notarized Developer ID`.
 
 ## Decisions and why
 
@@ -80,7 +83,7 @@ Generated with `ffmpeg` (test-only dependency):
 | 8 s leading silence | progress not appearing hung; recognition after silence |
 | 10 minute file | memory flatness, progress, interrupt |
 
-Current state: 25/25 exit-code sweep passing.
+Current state: 31/31 exit-code sweep passing against a Release build.
 
 ## Next
 
