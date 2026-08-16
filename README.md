@@ -19,7 +19,8 @@ $ transcribe -f srt lecture.mov -o lecture.srt
 - Picks an audio track when a file has several, and tells you when it had to choose.
 - Writes plain text, timestamped text, SubRip (`.srt`), WebVTT (`.vtt`), or JSON with per-word
   timings.
-- Runs entirely on-device. No network, no API keys, no per-minute billing.
+- Transcribes on-device. Your audio is never uploaded, and there are no API keys and no per-minute
+  billing. The only network access is a one-time model download per language, from Apple.
 - No external dependencies. It does not shell out to `ffmpeg` or anything else.
 
 ## Requirements
@@ -36,7 +37,29 @@ brew install drewster99/tap/transcribe
 
 Or download the `.pkg` from [Releases](https://github.com/drewster99/macos-transcribe/releases),
 which installs `transcribe` to `/usr/local/bin`. A `.tar.gz` of the bare binary is published
-alongside it, with `SHA256SUMS`.
+alongside it, with `SHA256SUMS`:
+
+```
+shasum -a 256 -c SHA256SUMS
+```
+
+Both are signed with a Developer ID certificate and notarized by Apple. The `.pkg` also carries a
+stapled notarization ticket, so it installs on a machine that is offline; a bare executable cannot
+carry one, which is the reason the `.pkg` exists at all.
+
+### First run
+
+The speech model for your language downloads once, the first time you transcribe in it. That is the
+only time `transcribe` touches the network — your audio is never sent anywhere. Use
+`--install-model` to fetch it ahead of time, and `--list-locales` to see what is already on the
+machine.
+
+### Uninstall
+
+```
+brew uninstall transcribe          # if installed through the tap
+sudo rm /usr/local/bin/transcribe  # if installed from the .pkg or tarball
+```
 
 ## Usage
 
@@ -83,18 +106,31 @@ and end times.
 
 ### Choosing a track
 
-A file with one audio track just works. With several, the first is used and a warning names what was
-skipped:
+A file with one audio track just works. With several — a film with dubbed languages, a recording
+with a separate microphone per speaker — the first is used and a warning names what was skipped, so
+a multi-track file never gets silently half-read:
 
 ```
 $ transcribe --list-tracks film.mov
 [0]  eng       aac   48000 Hz  2ch  128 kbps  00:00:00–01:32:11
 [1]  fra       aac   48000 Hz  2ch  128 kbps  00:00:00–01:32:11
 
+$ transcribe film.mov
+transcribe: warning: This file has 2 audio tracks; transcribing track 0 (eng).
+Skipped: 1 (fra). Use --track to choose, or --first-track to silence this.
+
 $ transcribe --track 1 film.mov
 ```
 
-Use `--first-track` to accept the first one silently. One track is transcribed per invocation.
+Use `--first-track` to accept the first one silently. One track is transcribed per invocation, so
+use a shell loop to get them all:
+
+```
+for t in 0 1 2; do transcribe --track $t film.mov -o "track$t.txt"; done
+```
+
+Tracks are numbered among the audio tracks only, so `--track 0` is the first *audio* track whether
+or not the file also has video. A track whose container declares no language shows as `und`.
 
 ### Languages
 
