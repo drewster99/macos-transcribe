@@ -58,11 +58,7 @@ final class StderrReporter: Sendable {
     }
 
     /// Draws the transcription progress indicator.
-    ///
-    /// - Parameters:
-    ///   - processed: How much of the media has been fed to the analyzer.
-    ///   - total: Total media duration, or nil when the duration is not known.
-    func reportProgress(processed: Duration, total: Duration?) {
+    func reportProgress(_ status: TranscriptionStatusLine) {
         guard drawsProgress else { return }
 
         let shouldDraw = progressState.withLock { state -> Bool in
@@ -76,15 +72,17 @@ final class StderrReporter: Sendable {
         }
         guard shouldDraw else { return }
 
-        // A live-streamed or malformed file can report an indefinite duration; showing elapsed time
-        // alone is honest, where a percentage would require inventing a denominator.
-        guard let total, total > .zero else {
-            write("\r\u{1B}[K  \(Self.timecode(processed)) processed")
-            return
-        }
-        let fraction = min(1.0, max(0.0, processed / total))
-        let percent = Int((fraction * 100).rounded())
-        write("\r\u{1B}[K  \(percent)%  \(Self.timecode(processed)) / \(Self.timecode(total))")
+        write("\r\u{1B}[K\(status.text)")
+    }
+
+    /// Writes the closing summary of a successful transcription.
+    ///
+    /// Unlike the progress indicator this is a finished line, so it is written to a file or pipe as
+    /// well as to a terminal; on a terminal it replaces the progress line.
+    func reportCompletion(_ status: TranscriptionStatusLine) {
+        guard !isQuiet else { return }
+        clearProgressLine()
+        write("\(status.text)\n")
     }
 
     /// Draws progress for a model download, which reports a completed fraction rather than a
@@ -122,14 +120,5 @@ final class StderrReporter: Sendable {
 
     private func write(_ text: String) {
         FileHandle.standardError.write(Data(text.utf8))
-    }
-
-    /// Formats a duration as `HH:MM:SS`.
-    private static func timecode(_ duration: Duration) -> String {
-        let totalSeconds = Int(duration.components.seconds)
-        return String(format: "%02d:%02d:%02d",
-                      totalSeconds / 3600,
-                      (totalSeconds % 3600) / 60,
-                      totalSeconds % 60)
     }
 }

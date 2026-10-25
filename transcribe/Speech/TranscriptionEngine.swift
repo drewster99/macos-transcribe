@@ -133,6 +133,7 @@ struct TranscriptionEngine {
         // its partial results and be written out as a finished transcript.
         try interrupts.throwIfInterrupted()
 
+        plan.progress.reportCompletion()
         return await collector.segments()
     }
 

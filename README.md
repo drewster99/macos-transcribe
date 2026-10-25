@@ -80,6 +80,17 @@ transcribe [options] <file>
       --version, --help
 ```
 
+While it runs, a terminal shows position, speed relative to realtime, and percentage, replaced by a
+summary when the transcript is done:
+
+```
+(MacOS Transcribe v0.1.1) TRANSCRIBING: 00:46:17 / 01:11:27 @ 21.2X speed -  64%
+(MacOS Transcribe v0.1.1) COMPLETE:     01:11:27 / 01:11:27 @ 20.2X speed - 100%
+```
+
+The live line is drawn only when standard error is a terminal; the summary line is always written
+unless `--quiet` is given.
+
 The transcript goes to standard output; warnings and progress go to standard error. Redirecting or
 piping is safe:
 

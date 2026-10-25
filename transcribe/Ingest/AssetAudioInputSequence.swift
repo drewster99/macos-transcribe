@@ -2,6 +2,7 @@ import AVFoundation
 import CoreMedia
 import Foundation
 import Speech
+import Synchronization
 
 /// Feeds one audio track of a media file to `SpeechAnalyzer`.
 ///
@@ -146,6 +147,15 @@ final class IngestProgress: Sendable {
 
     private let reporter: StderrReporter
     private let totalDuration: Duration?
+    private let toolVersion = ToolVersion.current
+
+    /// Taken when the plan is built, just before the analyzer starts, so the reported speed covers
+    /// analyzer startup and finalization as well as the read itself.
+    private let startedAt = ContinuousClock.now
+
+    /// The furthest position recorded, which stands in for the length of the media in the closing
+    /// summary when the file has no usable duration.
+    private let furthestProcessed = Mutex(Duration.zero)
 
     init(reporter: StderrReporter, assetDuration: CMTime) {
         self.reporter = reporter
@@ -160,6 +170,25 @@ final class IngestProgress: Sendable {
 
     func record(processedThrough timestamp: CMTime) {
         guard timestamp.isNumeric else { return }
-        reporter.reportProgress(processed: .seconds(timestamp.seconds), total: totalDuration)
+        let processed = Duration.seconds(timestamp.seconds)
+        furthestProcessed.withLock { $0 = max($0, processed) }
+        reporter.reportProgress(status(.transcribing, processed: processed))
+    }
+
+    /// Writes the closing summary. Call only once the whole input has been read and every result
+    /// collected, since the line states that the media was processed to the end.
+    func reportCompletion() {
+        let processed = totalDuration ?? furthestProcessed.withLock { $0 }
+        reporter.reportCompletion(status(.complete, processed: processed))
+    }
+
+    private func status(_ phase: TranscriptionStatusLine.Phase, processed: Duration) -> TranscriptionStatusLine {
+        TranscriptionStatusLine(
+            phase: phase,
+            processed: processed,
+            total: totalDuration,
+            elapsed: ContinuousClock.now - startedAt,
+            toolVersion: toolVersion
+        )
     }
 }
