@@ -29,12 +29,13 @@ struct TranscriptRenderer {
 
     /// One line per result, prefixed with the time it starts.
     ///
-    /// Whole seconds, with the hour component always present, so the text starts at the same column
-    /// on every line and stays aligned when a recording runs past an hour.
+    /// The line shape is the one YouTube and Spotify parse as chapters, so any line can be pasted
+    /// into an episode description as-is. Nothing sits between the time and the text, because
+    /// Spotify allows at most one punctuation mark there and YouTube expects none.
     private func renderTimedText(_ transcript: Transcript) -> String {
         guard !transcript.isEmpty else { return "" }
         return transcript.segments
-            .map { "[\(Self.clockTimecode($0.start))] \($0.text)" }
+            .map { "\(Self.timedTextTimecode($0.start)) \($0.text)" }
             .joined(separator: "\n") + "\n"
     }
 
@@ -128,11 +129,19 @@ struct TranscriptRenderer {
         timecode(seconds, millisecondSeparator: ".")
     }
 
-    /// `HH:MM:SS`, truncated rather than rounded so the label never points past the words it marks.
-    static func clockTimecode(_ seconds: TimeInterval) -> String {
+    /// `MM:SS` under an hour, `HH:MM:SS` from an hour on, truncated rather than rounded so the label
+    /// never points past the words it marks.
+    ///
+    /// Both are formats Spotify documents for description chapters and YouTube parses. The hour is
+    /// zero-padded because Spotify lists `HH:MM:SS` but not `H:MM:SS`.
+    static func timedTextTimecode(_ seconds: TimeInterval) -> String {
         let clamped = seconds.isFinite ? max(0, seconds) : 0
         let total = Int(clamped)
-        return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        let wholeSeconds = total % 60
+        guard hours > 0 else { return String(format: "%02d:%02d", minutes, wholeSeconds) }
+        return String(format: "%02d:%02d:%02d", hours, minutes, wholeSeconds)
     }
 
     private static func timecode(_ seconds: TimeInterval, millisecondSeparator: String) -> String {

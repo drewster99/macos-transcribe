@@ -37,17 +37,31 @@ final class TranscriptRendererTests: XCTestCase {
         XCTAssertEqual(TranscriptRenderer.webVTTTimecode(3661.5), "01:01:01.500")
     }
 
-    func testClockTimecodeTruncatesRatherThanRounds() {
+    func testTimedTextTimecodeTruncatesRatherThanRounds() {
         // Rounding up would label a line with a time later than the words it marks.
-        XCTAssertEqual(TranscriptRenderer.clockTimecode(2.9), "00:00:02")
-        XCTAssertEqual(TranscriptRenderer.clockTimecode(0), "00:00:00")
-        XCTAssertEqual(TranscriptRenderer.clockTimecode(3661), "01:01:01")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(2.9), "00:02")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(59.999), "00:59")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(3599.9), "59:59")
+    }
+
+    func testTimedTextTimecodeIsMinutesAndSecondsUnderAnHour() {
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(0), "00:00")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(90), "01:30")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(3599), "59:59")
+    }
+
+    func testTimedTextTimecodeAddsAZeroPaddedHourFromOneHourOn() {
+        // Spotify documents HH:MM:SS but not H:MM:SS, so the hour is always two digits.
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(3600), "01:00:00")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(3734), "01:02:14")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(36000), "10:00:00")
     }
 
     func testTimecodesClampNonFiniteAndNegativeValues() {
         XCTAssertEqual(TranscriptRenderer.subRipTimecode(-5), "00:00:00,000")
-        XCTAssertEqual(TranscriptRenderer.clockTimecode(.nan), "00:00:00")
-        XCTAssertEqual(TranscriptRenderer.clockTimecode(.infinity), "00:00:00")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(-5), "00:00")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(.nan), "00:00")
+        XCTAssertEqual(TranscriptRenderer.timedTextTimecode(.infinity), "00:00")
     }
 
     // MARK: - Formats
@@ -61,11 +75,14 @@ final class TranscriptRendererTests: XCTestCase {
     }
 
     func testTimedTextPrefixesEachLineWithItsStart() {
+        // No brackets or other punctuation between time and text: YouTube and Spotify both parse
+        // `00:00 Title` lines as chapters, and Spotify allows at most one mark between the two.
         let output = render(.timed, transcript([
             segment("First line.", start: 0, end: 1),
             segment("Second line.", start: 62.4, end: 64),
-        ]))
-        XCTAssertEqual(output, "[00:00:00] First line.\n[00:01:02] Second line.\n")
+            segment("Past the hour.", start: 3734.2, end: 3736),
+        ], duration: 3740))
+        XCTAssertEqual(output, "00:00 First line.\n01:02 Second line.\n01:02:14 Past the hour.\n")
     }
 
     func testSubRipNumbersCuesFromOne() {

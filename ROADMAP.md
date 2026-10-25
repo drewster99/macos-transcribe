@@ -47,6 +47,13 @@ re-segmentation heuristic sits between the model and plain-text output.
 format enum already decides everything about output shape; keeping it the only such dimension means
 no two options can contradict each other.
 
+**(DESIGN) `timed` lines use the chapter-list shape.** `MM:SS text` under an hour, `HH:MM:SS text`
+from an hour on, no brackets. This replaced `[HH:MM:SS] text`. YouTube and Spotify both parse this
+shape as description chapters, so lines paste straight into an episode description. Spotify documents
+`MM:SS` and `HH:MM:SS` but not `H:MM:SS`, so the hour is zero-padded, and it allows at most one
+punctuation mark between time and title, so the brackets went. The cost is that the text column
+shifts by three characters at the one-hour mark.
+
 **(DESIGN) An unsupported locale is an error.** Falling back to a nearby language would transcribe
 Portuguese with a Spanish model and produce fluent nonsense.
 

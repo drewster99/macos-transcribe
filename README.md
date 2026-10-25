@@ -95,10 +95,14 @@ starts, which is the easiest way to skim a long recording:
 
 ```
 $ transcribe -f timed standup.m4a
-[00:00:00] Thanks everyone for joining.
-[00:00:04] Let's start with the roadmap review.
-[00:00:11] The ingest work landed yesterday.
+00:00 Thanks everyone for joining.
+00:04 Let's start with the roadmap review.
+00:11 The ingest work landed yesterday.
 ```
+
+Times are `MM:SS` under an hour and `HH:MM:SS` from an hour on (`01:02:14`). That is the line shape
+YouTube and Spotify read as chapters in a video or episode description, so a line can be copied
+straight into a chapter list.
 
 `srt` and `vtt` re-segment the text into subtitle cues using the word timings, tunable with
 `--max-cue-seconds` and `--max-words-per-cue`. `json` carries metadata, segments, and per-word start
